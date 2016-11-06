@@ -8,5 +8,6 @@ Neural network has one hidden layer with 40 neurons and the network is fed with 
 There are four outputs: steer right, steer left, accelerate and brake.
 
 Genetic algorithm has a population size of 15 with 645 genes on each children.
+It usually takes about 15-20 generations for the first one to finish the track. By further improving the fitness function this should be even less. Currently it is still pretty primitive.
 
 
