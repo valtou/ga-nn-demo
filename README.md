@@ -1,4 +1,4 @@
-# Neural network and genetic algorithm demo with Java
+# Neural network and genetic algorithm demo written in Java
 
 Simple demo on evolving a car with genetic algorithm to finish a randomly drawn race track.
 Created with LibGDX and Box2D. 
