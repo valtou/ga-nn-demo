@@ -12,4 +12,8 @@ It usually takes about 10-15 generations for the first one to finish the track. 
 
 Fitness value is a combination of distance travelled, time from start to crash, checkpoint count and distance to overlapping checkpoint center.
 
+### [Short video of generation #22](https://my.mixtape.moe/jpbrfk.mp4)
+
+Red graph shows the evolution of father genomes fitness, brown is mothers fitness and yellow is the average of a generation.
+
 
