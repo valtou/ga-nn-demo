@@ -572,15 +572,21 @@ public class Car implements GenomeAware {
 			input = new Input(outputs);
 
 			setAccelerate(ACC_ACCELERATE);
-			if (input.up <= input.down && getSpeedKMH() >= 40) {
+			if (input.up <= input.down && getSpeedKMH() >= 60) {
 				setAccelerate(ACC_BRAKE);
 			} else {
 				setAccelerate(ACC_ACCELERATE);
 			}
-			if (input.left > input.right) {
+			if (input.right >= input.left + .6f) {
+				setSteer(STEER_HARD_RIGHT);
+			} else if (input.left >= input.right + .6f) {
+				setSteer(STEER_HARD_LEFT);
+			} else if (input.right >= input.left + .075f) {
+				setSteer(STEER_RIGHT);
+			} else if (input.left >= input.right + .075f) {
 				setSteer(STEER_LEFT);
 			} else {
-				setSteer(STEER_RIGHT);
+				setSteer(STEER_NONE);
 			}
 			hitList1.clear();
 			hitList2.clear();
@@ -589,7 +595,7 @@ public class Car implements GenomeAware {
 			hitList5.clear();
 			hitList6.clear();
 			hitList7.clear();
-			
+
 			d1 = 0;
 			d2 = 0;
 			d3 = 0;

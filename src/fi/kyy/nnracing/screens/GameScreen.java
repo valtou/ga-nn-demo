@@ -197,6 +197,7 @@ public class GameScreen implements Screen, ContactListener {
 					// TODO Modify this to include distance/time
 					// Currently the best fitness on this shitty track is about 1980 and >1776 when a car gets to finish
 					// float fitness = car.getCheckPointCount() * (1-car.getCenterCount())*50 + car.travelledDistance / 10 + TimeUnit.MILLISECONDS.toSeconds(car.getTimeBeforeCrash()) * 5;
+					
 					float fitness = car.getCheckPointCount() * (1-car.getCenterCount())*100 + car.travelledDistance / 5;
 					car.getGenome().setFitness(fitness);
 					car.update(Gdx.app.getGraphics().getDeltaTime());
@@ -252,7 +253,7 @@ public class GameScreen implements Screen, ContactListener {
 		int i = 0;
 		for (Genome genome : population) {
 			genome.setFitness(0);
-			Car c = new Car(world, 1, 2, new Vector2(7f, 5f), (float) Math.PI, 60, 15, 20, 50, i, genome);
+			Car c = new Car(world, 1, 2, new Vector2(7f, 5f), (float) Math.PI, 60, 15, 20, 70, i, genome);
 			i++;
 			this.activePopulation.add(c);
 		}
@@ -323,14 +324,14 @@ public class GameScreen implements Screen, ContactListener {
 		for (Car c : activePopulation) {
 			if (a.getUserData().equals("Obstacle") && b.getUserData().equals("Car" + c.getId())) {
 				// CAR HITS WALL
-				c.setTimeBeforeCrash(c.getTimeBeforeCrash() / System.currentTimeMillis());
+				c.setTimeBeforeCrash(System.currentTimeMillis() - c.getTimeBeforeCrash());
 				setCarStatic(b);
 				done++;
 				
 			}
 			if (b.getUserData().equals("Obstacle") && a.getUserData().equals("Car" + c.getId())) {
 				// CAR HITS WALL
-				c.setTimeBeforeCrash(c.getTimeBeforeCrash() / System.currentTimeMillis());
+				c.setTimeBeforeCrash(System.currentTimeMillis() - c.getTimeBeforeCrash());
 				setCarStatic(a);
 				done++;
 			}
