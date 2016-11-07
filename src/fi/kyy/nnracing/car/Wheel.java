@@ -14,8 +14,8 @@ public class Wheel {
 	public static final float PIXELS_PER_METER = 60.0f;
 	
 	public Car car;
-	private float width;
-	private float length;
+	public float width;
+	public float length;
 	public boolean revolving;
 	public boolean powered;
 	public Body body;

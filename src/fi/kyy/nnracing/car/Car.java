@@ -15,6 +15,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.RayCastCallback;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
 
 import fi.kyy.nnracing.ga.Genome;
 import fi.kyy.nnracing.ga.GenomeAware;
@@ -74,30 +75,31 @@ public class Car implements GenomeAware {
 
 	private int id;
 	private int checkPointCount = 0;
-	private int timeBeforeCrash = 0;
+	private long timeBeforeCrash = 0;
 	private float centerCount = 0;
 
 	public float travelledDistance = 0;
-	
+
 	private Vector2 lastPosition = new Vector2();
 	private Vector2 startPosition;
 
 	// Ray distances to track walls, these are the inputs for the neural network
 	private float d1, d2, d3, d4, d5, d6, d7;
-
-	public ArrayList<Body> hasGoneThroughCheckpointList = new ArrayList<Body>();
+	private int dCount;
 
 	private ArrayList<Vector2> hitList1 = new ArrayList<Vector2>(), hitList2 = new ArrayList<Vector2>(),
 			hitList3 = new ArrayList<Vector2>(), hitList4 = new ArrayList<Vector2>(),
 			hitList5 = new ArrayList<Vector2>(), hitList6 = new ArrayList<Vector2>(),
 			hitList7 = new ArrayList<Vector2>();
 
+	private Array<Vector2> raysToDraw = new Array<Vector2>();
+
 	private int counter;
 
 	public Car(World world, float width, float length, Vector2 position, float angle, float power, float minSteerAngle,
 			float maxSteerAngle, float maxSpeed, int id, Genome genome) {
 		super();
-		this.hasGoneThroughCheckpointList.clear();
+		dCount = 0;
 		this.steer = STEER_NONE;
 		this.accelerate = ACC_NONE;
 		this.counter = 0;
@@ -115,7 +117,7 @@ public class Car implements GenomeAware {
 		this.checkPointCount = 0;
 		this.startPosition = position;
 		this.centerCount = 0;
-		this.timeBeforeCrash = 0;
+		this.timeBeforeCrash = System.currentTimeMillis();
 
 		// Create body
 		BodyDef bodyDef = new BodyDef();
@@ -200,9 +202,22 @@ public class Car implements GenomeAware {
 
 	public void update(float deltaTime) {
 		// 1. KILL SIDEWAYS VELOCITY
+		GameScreen.shapeRenderer.begin(ShapeType.Filled);
+		GameScreen.shapeRenderer.setColor(Color.WHITE);
 		for (Wheel wheel : wheels) {
 			wheel.killSidewaysVelocity();
+			GameScreen.shapeRenderer.rect(wheel.body.getWorldCenter().x - wheel.width / 2,
+					wheel.body.getWorldCenter().y - wheel.length / 2, wheel.width / 2, wheel.length / 2, wheel.width,
+					wheel.length, 1, 1, (float) Math.toDegrees(wheel.body.getAngle()));
 		}
+		GameScreen.shapeRenderer.end();
+
+		GameScreen.shapeRenderer.begin(ShapeType.Line);
+		GameScreen.shapeRenderer.setColor(Color.WHITE);
+		GameScreen.shapeRenderer.rect(this.body.getWorldCenter().x - this.width / 2,
+				this.body.getWorldCenter().y - this.length / 2, this.width / 2, this.length / 2, this.width,
+				this.length, 1, 1, (float) Math.toDegrees(this.body.getAngle()));
+		GameScreen.shapeRenderer.end();
 
 		// 2. SET WHEEL ANGLE
 		float incr = (this.maxSteerAngle) * deltaTime * 5;
@@ -244,7 +259,8 @@ public class Car implements GenomeAware {
 		Vector2 baseVector; // Vector pointing in the direction force will be
 							// applied to a wheel ; relative to the wheel.
 
-		// If accelerator is pressed down and speed limit has not been reached, go forwards.
+		// If accelerator is pressed down and speed limit has not been reached,
+		// go forwards.
 		if ((this.accelerate == ACC_ACCELERATE) && (this.getSpeedKMH() < this.maxSpeed)) {
 			baseVector = new Vector2(0, -1);
 		} else if (this.accelerate == ACC_BRAKE) {
@@ -265,7 +281,8 @@ public class Car implements GenomeAware {
 		} else
 			baseVector = new Vector2(0, 0);
 
-		// Multiply by engine power, which gives us a force vector relative to the wheel
+		// Multiply by engine power, which gives us a force vector relative to
+		// the wheel
 		Vector2 forceVector = new Vector2(this.power * baseVector.x, this.power * baseVector.y);
 
 		// Apply force to each wheel
@@ -276,13 +293,13 @@ public class Car implements GenomeAware {
 
 		// If going very slow, stop - to prevent endless sliding
 		Vector2 point = this.body.getWorldCenter();
-		Vector2 direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle())), 
-				(float) (point.y + point.y * Math.sin(this.body.getAngle())));
-		direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-30))), 
-				(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-30))));
+		Vector2 direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle())),
+				(float) (point.y + 8 * Math.sin(this.body.getAngle())));
+		direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-30))),
+				(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-30))));
 
-		// System.out.println("CENTERPOINT " + point.x + ", " + point.y);
-		// System.out.println("DIRECTION " + direction.x + ", " + direction.y);
+		// System.out.println("CENTERPOINT: " + point.x + ", " + point.y);
+		// System.out.println("DIRECTION: " + direction.x + ", " + direction.y);
 
 		if (counter == 10) {
 			travelledDistance += Math.abs(point.dst(lastPosition));
@@ -291,7 +308,8 @@ public class Car implements GenomeAware {
 		}
 		counter++;
 
-		// TODO Fix this massive block of shit code, create better and general implementation of ray casting
+		// TODO Fix this massive block of shit code, create better and general
+		// implementation of ray casting
 		if (!this.body.getType().equals(BodyType.StaticBody)) {
 			GameScreen.world.rayCast(new RayCastCallback() {
 				@Override
@@ -315,17 +333,19 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.WHITE);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d1 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
-			direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-55))), 
-					(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-55))));
+			direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-55))),
+					(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-55))));
 			GameScreen.world.rayCast(new RayCastCallback() {
 
 				@Override
@@ -349,17 +369,19 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.YELLOW);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d2 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
-			direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-75))), 
-					(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-75))));
+			direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-75))),
+					(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-75))));
 			GameScreen.world.rayCast(new RayCastCallback() {
 
 				@Override
@@ -383,17 +405,19 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.GOLD);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d3 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
-			direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-90))), 
-					(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-90))));
+			direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-90))),
+					(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-90))));
 			GameScreen.world.rayCast(new RayCastCallback() {
 
 				@Override
@@ -417,17 +441,19 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.RED);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d4 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
-			direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-105))), 
-					(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-105))));
+			direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-105))),
+					(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-105))));
 			GameScreen.world.rayCast(new RayCastCallback() {
 				@Override
 				public float reportRayFixture(Fixture fixture, Vector2 point, Vector2 normal, float fraction) {
@@ -450,18 +476,20 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.GOLD);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d5 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
 
-			direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-125))), 
-					(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-125))));
+			direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-125))),
+					(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-125))));
 			GameScreen.world.rayCast(new RayCastCallback() {
 
 				@Override
@@ -485,17 +513,19 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.YELLOW);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d6 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
-			direction = new Vector2((float) (point.x + point.x * Math.cos(this.body.getAngle() + Math.toRadians(-150))), 
-					(float) (point.y + point.y * Math.sin(this.body.getAngle() + Math.toRadians(-150))));
+			direction = new Vector2((float) (point.x + 8 * Math.cos(this.body.getAngle() + Math.toRadians(-150))),
+					(float) (point.y + 8 * Math.sin(this.body.getAngle() + Math.toRadians(-150))));
 			GameScreen.world.rayCast(new RayCastCallback() {
 
 				@Override
@@ -519,66 +549,55 @@ public class Car implements GenomeAware {
 					}
 					Car.this.normal.set(normal).add(apu);
 					GameScreen.shapeRenderer.begin(ShapeType.Line);
-					GameScreen.shapeRenderer.setColor(Color.WHITE);
+					GameScreen.shapeRenderer.setColor(Color.BLUE);
 					GameScreen.shapeRenderer.line(Car.this.body.getWorldCenter(), apu);
 					GameScreen.shapeRenderer.line(apu, Car.this.normal);
 					GameScreen.shapeRenderer.end();
 					d7 = Car.this.body.getWorldCenter().dst(apu);
+					raysToDraw.add(apu);
+					dCount++;
 					return 1;
 				}
 
 			}, point, direction);
 		}
 
-		// Input the sensor information to the network
-		d1 = Math.abs(d1);
-		d2 = Math.abs(d2);
-		d3 = Math.abs(d3);
-		d4 = Math.abs(d4);
-		d5 = Math.abs(d5);
-		d6 = Math.abs(d6);
-		d7 = Math.abs(d7);
-		
-		List<Float> outputs = network.update(d1, d2, d3, d4, d5, d6, d7);
-		
-		hitList1.clear();
-		hitList2.clear();
-		hitList3.clear();
-		hitList4.clear();
-		hitList5.clear();
-		hitList6.clear();
-		hitList7.clear();
-		
-		//System.out.println(d1 + ", " + d2 + ", " + d3 + ", " + d4 + ", " + d5 + ", " + d6 + ", " + d7 + ", " + d8);
+		if (dCount >= 4) {
+			dCount = 0;
 
-		// Handle the car according to the neural network outputs
-		input = new Input(outputs);
-		
-		setAccelerate(ACC_ACCELERATE);
-		if (input.isUpKeyDown()) {
+			// Input the sensor information to the network
+			List<Float> outputs = network.update(d1, d2, d3, d4, d5, d6, d7);
+
+			// Handle the car according to the neural network outputs
+			input = new Input(outputs);
+
 			setAccelerate(ACC_ACCELERATE);
-		} else if (input.isDownKeyDown() && this.getSpeedKMH() >= 40) {
-			setAccelerate(ACC_BRAKE);
-		}
-		
-		// TODO Modify the fitness to be so good that this thing does not have to be this complicated
-		if (input.isRightKeyDown() && (d7 > d1 || d2 > d6)) {
-			setSteer(STEER_RIGHT);
-		} else if (input.isLeftKeyDown() && (d1 > d7 || d2 > d6)) {
-			setSteer(STEER_LEFT);
-		} else if (d7 > d1 && d2 > d6) {
-			setSteer(STEER_RIGHT);
-		} else if (d1 > d7 && d6 > d2) {
-			setSteer(STEER_LEFT);
-		} else if (d3 > d5) {
-			setSteer(STEER_RIGHT);
-			setAccelerate(ACC_ACCELERATE);
-		} else if (d5 > d3) {
-			setSteer(STEER_LEFT);
-			setAccelerate(ACC_ACCELERATE);
-		} else {
-			setSteer(STEER_NONE);
-			setAccelerate(ACC_ACCELERATE);
+			if (input.up <= input.down && getSpeedKMH() >= 40) {
+				setAccelerate(ACC_BRAKE);
+			} else {
+				setAccelerate(ACC_ACCELERATE);
+			}
+			if (input.left > input.right) {
+				setSteer(STEER_LEFT);
+			} else {
+				setSteer(STEER_RIGHT);
+			}
+			hitList1.clear();
+			hitList2.clear();
+			hitList3.clear();
+			hitList4.clear();
+			hitList5.clear();
+			hitList6.clear();
+			hitList7.clear();
+			
+			d1 = 0;
+			d2 = 0;
+			d3 = 0;
+			d4 = 0;
+			d5 = 0;
+			d6 = 0;
+			d7 = 0;
+
 		}
 
 		distanceTimer += deltaTime;
@@ -789,11 +808,11 @@ public class Car implements GenomeAware {
 		this.centerCount = centerCount;
 	}
 
-	public int getTimeBeforeCrash() {
+	public long getTimeBeforeCrash() {
 		return timeBeforeCrash;
 	}
 
-	public void setTimeBeforeCrash(int timeBeforeCrash) {
+	public void setTimeBeforeCrash(long timeBeforeCrash) {
 		this.timeBeforeCrash = timeBeforeCrash;
 	}
 

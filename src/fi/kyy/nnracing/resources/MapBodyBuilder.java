@@ -27,6 +27,7 @@ public class MapBodyBuilder {
     // The pixels per tile.
     private static float ppt = 0;
     public static Array<Body> checkPointArray = new Array<Body>();
+    public static Array<Body> obstacleArray = new Array<Body>();
     
     public static Array<Body> buildBounds(Map map, float pixels, World world) {
         ppt = pixels;
@@ -158,6 +159,7 @@ public class MapBodyBuilder {
             bodies.add(body);
             shape.dispose();
         }
+        obstacleArray.addAll(bodies);
         return bodies;
     }
 

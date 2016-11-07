@@ -78,6 +78,11 @@ public class GeneticAlgorithm {
 		List<Genome> fittest = getFittest(1);
 		return fittest.get(0);
 	}
+	
+	public Genome getMother() {
+		List<Genome> fittest = getFittest(2);
+		return fittest.get(1);
+	}
 
 	public List<Genome> getFittest(int n) {
 		List<Genome> result = null;

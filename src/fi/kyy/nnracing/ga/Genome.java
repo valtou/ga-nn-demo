@@ -5,7 +5,7 @@ import java.util.Arrays;
 import fi.kyy.nnracing.utils.RandomUtil;
 
 public class Genome implements Comparable<Genome> {
-	private static final Float MUTATION_RATE = .15f;
+	private static final Float MUTATION_RATE = .02f;
 
 	private Float[] genes;
 	private float fitness;

@@ -15,6 +15,8 @@ public class Input implements Serializable {
 
 	private boolean isLeftButtonPressed;
 	private boolean isRightButtonPressed;
+	
+	public float left, right, up, down;
 
 	public Input() {
 	}
@@ -40,6 +42,10 @@ public class Input implements Serializable {
 		float down = inputs.get(2);
 		float left = inputs.get(1);
 		float right = inputs.get(0);
+		this.up = up;
+		this.down = down;
+		this.left = left;
+		this.right = right;
 		
 		if (up > 0.5f) {
 			upKeyDown = true;
