@@ -76,7 +76,6 @@ public class GameScreen implements Screen, ContactListener {
 
 	private BitmapFont font;
 	private float average = 0;
-	private float bestMother = 0;
 	
 	float[] obstacleVertices;
 	
@@ -135,14 +134,6 @@ public class GameScreen implements Screen, ContactListener {
 		spriteBatch.setProjectionMatrix(graphCamera.getCombined());
 
 		float millisecondsDelta = delta * 1000.0f;
-		
-		/*DecimalFormat df = new DecimalFormat("0");
-		String formatted = df.format(best);
-		spriteBatch.begin();
-		font.draw(spriteBatch, "BEST" + formatted, 2, 4);
-		formatted = df.format(average);
-		font.draw(spriteBatch, "AVERAGE" + formatted, 2, 2);
-		spriteBatch.end();*/
 
 		if (!populationAlive) {
 			generateNewPopulation();
@@ -152,42 +143,42 @@ public class GameScreen implements Screen, ContactListener {
 			for (int i = 1; i < averageFitnesses.size; i++) {
 				graphShapeRenderer.begin(ShapeType.Line);
 				graphShapeRenderer.setColor(Color.YELLOW);
-				graphShapeRenderer.line(new Vector2(i - 1, averageFitnesses.get(i - 1) / 150), 
-						new Vector2(i, averageFitnesses.get(i) / 150));
+				graphShapeRenderer.line(new Vector2(i - 1, averageFitnesses.get(i - 1) / 300), 
+						new Vector2(i, averageFitnesses.get(i) / 300));
 				graphShapeRenderer.end();
 			}
 		} else if (averageFitnesses.size == 1) {
 			graphShapeRenderer.begin(ShapeType.Point);
 			graphShapeRenderer.setColor(Color.YELLOW);
-			graphShapeRenderer.point(geneticAlgorithm.getGeneration() - 1, averageFitnesses.get(0) / 150, 0);
+			graphShapeRenderer.point(geneticAlgorithm.getGeneration() - 1, averageFitnesses.get(0) / 300, 0);
 			graphShapeRenderer.end();
 		}
 		if (motherFitnesses.size > 1) {
 			for (int i = 1; i < motherFitnesses.size; i++) {
 				graphShapeRenderer.begin(ShapeType.Line);
 				graphShapeRenderer.setColor(Color.BROWN);
-				graphShapeRenderer.line(new Vector2(i - 1, motherFitnesses.get(i - 1) / 150), 
-						new Vector2(i, motherFitnesses.get(i) / 150));
+				graphShapeRenderer.line(new Vector2(i - 1, motherFitnesses.get(i - 1) / 300), 
+						new Vector2(i, motherFitnesses.get(i) / 300));
 				graphShapeRenderer.end();
 			}
 		} else if (motherFitnesses.size == 1) {
 			graphShapeRenderer.begin(ShapeType.Point);
 			graphShapeRenderer.setColor(Color.BROWN);
-			graphShapeRenderer.point(geneticAlgorithm.getGeneration() - 1, motherFitnesses.get(0) / 150, 0);
+			graphShapeRenderer.point(geneticAlgorithm.getGeneration() - 1, motherFitnesses.get(0) / 300, 0);
 			graphShapeRenderer.end();
 		}
 		if (bestFitnesses.size > 1) {
 			for (int i = 1; i < bestFitnesses.size; i++) {
 				graphShapeRenderer.begin(ShapeType.Line);
 				graphShapeRenderer.setColor(Color.RED);
-				graphShapeRenderer.line(new Vector2(i - 1, bestFitnesses.get(i - 1) / 150), 
-						new Vector2(i, bestFitnesses.get(i) / 150));
+				graphShapeRenderer.line(new Vector2(i - 1, bestFitnesses.get(i - 1) / 300), 
+						new Vector2(i, bestFitnesses.get(i) / 300));
 				graphShapeRenderer.end();
 			}
 		} else if (bestFitnesses.size == 1) {
 			graphShapeRenderer.begin(ShapeType.Point);
 			graphShapeRenderer.setColor(Color.RED);
-			graphShapeRenderer.point(geneticAlgorithm.getGeneration() - 1, bestFitnesses.get(0) / 150, 0);
+			graphShapeRenderer.point(geneticAlgorithm.getGeneration() - 1, bestFitnesses.get(0) / 300, 0);
 			graphShapeRenderer.end();
 		}
 		
@@ -363,7 +354,7 @@ public class GameScreen implements Screen, ContactListener {
 		// TODO Auto-generated method stub
 
 	}
-
+	
 	@Override
 	public void preSolve(Contact contact, Manifold oldManifold) {
 		// TODO Auto-generated method stub
